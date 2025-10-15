@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EcoHeróis 🌎</title>
+    <style>
+      body {
+        font-family: "Comic Sans MS", sans-serif;
+        text-align: center;
+        background-color: #d0f0c0;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-top: 10px;
+      }
+
+      p {
+        margin: 5px 0;
+      }
+
+      #instructions {
+        background-color: #ffffffb3;
+        border: 2px solid #6c9a8b;
+        border-radius: 15px;
+        padding: 10px;
+        width: 90%;
+        max-width: 400px;
+        margin: 10px auto;
+        text-align: left;
+        font-size: 1rem;
+      }
+
+      #instructions h2 {
+        font-size: 1.2rem;
+        margin-top: 0;
+      }
+
+      #character-selection,
+      #game-container {
+        margin: 20px auto;
+      }
+
+      #character-selection button {
+        font-size: 2rem;
+        margin: 5px;
+        padding: 10px;
+        border-radius: 10px;
+        border: 2px solid #6c9a8b;
+        background-color: #fff;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      #character-selection button:hover {
+        transform: scale(1.1);
+      }
+
+      #start-btn {
+        padding: 10px 20px;
+        font-size: 1.5rem;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        margin-top: 20px;
+        cursor: pointer;
+      }
+
+      #game-container {
+        position: relative;
+        width: 90%;
+        max-width: 500px;
+        height: 400px;
+        background-color: #a2d5ab;
+        border: 5px solid #6c9a8b;
+        border-radius: 15px;
+        overflow: hidden;
+        display: none;
+        touch-action: none;
+      }
+
+      #player {
+        position: absolute;
+        bottom: 10px;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        transition: left 0.2s;
+      }
+
+      .recycle-item {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+      }
+
+      .recycle-item.plastic {
+        background-color: #4fc3f7;
+      }
+      .recycle-item.paper {
+        background-color: #fff176;
+      }
+      .recycle-item.metal {
+        background-color: #f06292;
+      }
+
+      #score {
+        display: none;
+        font-size: 1.5rem;
+        margin-top: 10px;
+      }
+
+      .message {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 5px 10px;
+        border-radius: 10px;
+        font-size: 1rem;
+        animation: floatUp 3s ease forwards;
+      }
+
+      @keyframes floatUp {
+        0% {
+          bottom: 50px;
+          opacity: 1;
+        }
+        100% {
+          bottom: 150px;
+          opacity: 0;
+        }
+      }
+
+      #win-message {
+        display: none;
+        font-size: 2rem;
+        background-color: #ffeb3b;
+        padding: 20px;
+        border-radius: 15px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>EcoHeróis 🌎</h1>
+
+    <div id="instructions">
+      <h2>📜 Como Jogar</h2>
+      <ul>
+        <li>👉 Escolha seu personagem fofo.</li>
+        <li>
+          👆 Toque na tela para mover seu herói para a esquerda ou direita.
+        </li>
+        <li>🗑️ Pegue os objetos recicláveis que caem!</li>
+        <li>💬 Leia as dicas ecológicas que aparecem.</li>
+        <li>🏆 Ganhe ao atingir <strong>700 pontos</strong>!</li>
+      </ul>
+    </div>
+
+    <p>Escolha seu personagem:</p>
+    <div id="character-selection">
+      <button>🌱</button>
+      <button>♻</button>
+      <button>🍌</button>
+      <button>💡</button>
+      <button>🌳</button>
+      <button>🌎</button>
+      <button>🍂</button>
+    </div>
+
+    <button id="start-btn" style="display: none">Começar</button>
+
+    <div id="game-container">
+      <div id="player"></div>
+    </div>
+
+    <p id="score">Pontuação: 0</p>
+    <div id="win-message">🎉 Parabéns! Você salvou o planeta! 🎉</div>
+
+    <script>
+      const characterButtons = document.querySelectorAll(
+        "#character-selection button"
+      );
+      const startBtn = document.getElementById("start-btn");
+      const gameContainer = document.getElementById("game-container");
+      const player = document.getElementById("player");
+      const scoreEl = document.getElementById("score");
+      const winMessage = document.getElementById("win-message");
+
+      let selectedChar = "";
+      let score = 0;
+      let playerPos = { x: 220, y: 350 };
+      let gameInterval;
+      const POINTS_TO_WIN = 700;
+
+      // Escolher personagem
+      characterButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          selectedChar = btn.innerText;
+          player.innerText = selectedChar;
+          startBtn.style.display = "inline-block";
+        });
+      });
+
+      // Movimento suave por toque
+      function moveTo(x) {
+        const speed = 8;
+        function step() {
+          if (Math.abs(playerPos.x - x) < speed) {
+            playerPos.x = x;
+            player.style.left = playerPos.x + "px";
+            return;
+          }
+          playerPos.x += playerPos.x < x ? speed : -speed;
+          player.style.left = playerPos.x + "px";
+          requestAnimationFrame(step);
+        }
+        step();
+      }
+
+      gameContainer.addEventListener("touchstart", (e) => {
+        const rect = gameContainer.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left - 25;
+        const targetX = Math.min(
+          Math.max(0, touchX),
+          gameContainer.clientWidth - 50
+        );
+        moveTo(targetX);
+      });
+
+      // Mensagens educativas
+      function showMessage(text) {
+        const msg = document.createElement("div");
+        msg.classList.add("message");
+        msg.innerText = text;
+        gameContainer.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+      }
+
+      // Itens recicláveis
+      function createRecycleItem() {
+        const item = document.createElement("div");
+        const types = ["plastic", "paper", "metal"];
+        const emojis = { plastic: "🍼", paper: "📄", metal: "🥫" };
+        const messages = {
+          plastic: "Plástico reciclado ajuda os oceanos 🌊",
+          paper: "Papel reciclado salva árvores 🌳",
+          metal: "Reciclar metal economiza energia ⚡",
+        };
+        const type = types[Math.floor(Math.random() * types.length)];
+
+        item.classList.add("recycle-item", type);
+        item.style.left =
+          Math.random() * (gameContainer.clientWidth - 40) + "px";
+        item.style.top = "0px";
+        item.innerText = emojis[type];
+
+        gameContainer.appendChild(item);
+
+        let posY = 0;
+        const fallInterval = setInterval(() => {
+          posY += 2;
+          item.style.top = posY + "px";
+
+          // Colisão
+          if (
+            posY + 40 > playerPos.y &&
+            posY < playerPos.y + 50 &&
+            parseInt(item.style.left) + 40 > playerPos.x &&
+            parseInt(item.style.left) < playerPos.x + 50
+          ) {
+            score += 20;
+            scoreEl.innerText = "Pontuação: " + score;
+            showMessage(messages[type]);
+            item.remove();
+            clearInterval(fallInterval);
+
+            if (score >= POINTS_TO_WIN) {
+              clearInterval(gameInterval);
+              winMessage.style.display = "block";
+            }
+          }
+
+          if (posY > gameContainer.clientHeight) {
+            item.remove();
+            clearInterval(fallInterval);
+          }
+        }, 20);
+      }
+
+      // Iniciar jogo
+      startBtn.addEventListener("click", () => {
+        document.getElementById("character-selection").style.display = "none";
+        startBtn.style.display = "none";
+        document.getElementById("instructions").style.display = "none";
+        gameContainer.style.display = "block";
+        scoreEl.style.display = "block";
+        winMessage.style.display = "none";
+
+        score = 0;
+        scoreEl.innerText = "Pontuação: 0";
+        playerPos = { x: gameContainer.clientWidth / 2 - 25, y: 350 };
+        player.style.left = playerPos.x + "px";
+        player.style.top = playerPos.y + "px";
+
+        gameInterval = setInterval(createRecycleItem, 1500);
+      });
+    </script>
+  </body>
+</html>
